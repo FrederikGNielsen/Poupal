@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using LootLocker.Requests;
@@ -57,14 +58,11 @@ public class Bootstrap : MonoBehaviour
             }
             else
             {                
-                Debug.Log("Progression tier: " + response.step);
+                Debug.Log("Progression tier: " + response.points);
             }
         });
 
         StartCoroutine(GetWallet());
-        
-        //StartCoroutine(GetWallet());
-
     }
 
     #region  GetPlayerInfo
@@ -98,7 +96,17 @@ public class Bootstrap : MonoBehaviour
     
     private void AddGold(string amount)
     {
-        int Bal = int.Parse(_balance);
+        int Bal;
+        try
+        {
+            Bal = int.Parse(_balance);
+        }
+        catch (FormatException)
+        {
+            Debug.Log("Invalid balance format. Setting balance to 0.");
+            Bal = 0;
+        }
+
         int Amount = int.Parse(amount);
         moneyText.text = "Money: " + (Bal + Amount);
         LootLockerSDKManager.CreditBalanceToWallet(_walletID, "01HTWQ30JTBCKE8X24NC34X1B4", amount, (response) =>
