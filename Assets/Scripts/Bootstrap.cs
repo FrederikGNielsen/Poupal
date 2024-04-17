@@ -3,15 +3,14 @@ using System.Collections;
 using UnityEngine;
 using LootLocker.Requests;
 using TMPro;
-using Unity.VisualScripting;
 
 public class Bootstrap : MonoBehaviour
 {
     private string _holderUlid;
     private string _walletID;
 
-    [SerializeField] private string _balance;
-    [SerializeField] private string _characterID;
+    [SerializeField] private string balance;
+    [SerializeField] private string characterID;
 
     public TextMeshProUGUI moneyText;
     
@@ -50,19 +49,16 @@ public class Bootstrap : MonoBehaviour
         yield return new WaitUntil(() => hasConnected);
         Debug.Log("Guest login complete");
         
-        LootLockerSDKManager.GetPlayerProgression("plevel", (response) =>
-        {
-            if (!response.success)
-            {
-                Debug.Log("Error getting progression tier: " + response.errorData.message);
-            }
-            else
-            {                
-                Debug.Log("Progression tier: " + response.points);
-            }
-        });
-
         StartCoroutine(GetWallet());
+        
+        RegisterProgression("plevel");
+        RegisterProgression("pstrength");
+        RegisterProgression("pspeed");
+        RegisterProgression("pstamina");
+        RegisterProgression("phealth");
+        
+      
+
     }
 
     #region  GetPlayerInfo
@@ -89,6 +85,9 @@ public class Bootstrap : MonoBehaviour
         yield return new WaitUntil(() => responseReceived);
         
         Debug.Log("Found wallet " + _walletID);
+        
+        AddGold("100");
+        
         StartCoroutine(GetMoneyAmount());
 
     }
@@ -96,19 +95,19 @@ public class Bootstrap : MonoBehaviour
     
     private void AddGold(string amount)
     {
-        int Bal;
+        int bal;
         try
         {
-            Bal = int.Parse(_balance);
+            bal = int.Parse(balance);
         }
         catch (FormatException)
         {
             Debug.Log("Invalid balance format. Setting balance to 0.");
-            Bal = 0;
+            bal = 0;
         }
 
         int Amount = int.Parse(amount);
-        moneyText.text = "Money: " + (Bal + Amount);
+        moneyText.text = "Money: " + (bal + Amount);
         LootLockerSDKManager.CreditBalanceToWallet(_walletID, "01HTWQ30JTBCKE8X24NC34X1B4", amount, (response) =>
         {
             if (response.success)
@@ -132,7 +131,7 @@ public class Bootstrap : MonoBehaviour
         {
             if (response.success)
             {
-                _balance = response.balances[0].amount;
+                balance = response.balances[0].amount;
                 responseReceived = true;
             }
             else
@@ -143,9 +142,25 @@ public class Bootstrap : MonoBehaviour
             }
         });
         yield return new WaitUntil(() => responseReceived);
-        moneyText.text = "Money: " + _balance;
+        moneyText.text = "Money: " + balance;
     }
     
+    
+    public void RegisterProgression(string key)
+    {
+        LootLockerSDKManager.RegisterPlayerProgression(key, (response) =>
+        {
+            if (response.success)
+            {
+                Debug.Log("Progression registered");
+            }
+            else
+            {
+                Debug.Log("key: " + key);
+                Debug.Log("Error registering progression: " + response.errorData.message);
+            }
+        });
+    }
 
     #endregion
 }
