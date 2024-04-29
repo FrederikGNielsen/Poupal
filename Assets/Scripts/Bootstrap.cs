@@ -6,29 +6,45 @@ using TMPro;
 
 public class Bootstrap : MonoBehaviour
 {
+    
+    public static Bootstrap instance;
+    
     private string _holderUlid;
     private string _walletID;
 
     [SerializeField] private string balance;
     [SerializeField] private string characterID;
+    
+    //Strength
+    public int strengthLevel;
 
     public TextMeshProUGUI moneyText;
-    
+
+
     private void Awake()
     {
-        StartCoroutine(GuestLogin());
-    }
-
-    public void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.T))
+        //singleton pattern
+        if (instance == null)
         {
-            AddGold("1");
+            instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
         }
     }
 
+    private void Start()
+    {
+        StartCoroutine(GuestLogin());
+    }
+    
+    
+    #region login
+    
     IEnumerator GuestLogin()
     {
+        GameManager.instance.switchToLoadingView();
         yield return new WaitForSeconds(1);
         bool hasConnected = false;
         LootLockerSDKManager.StartGuestSession((response) =>
@@ -49,6 +65,11 @@ public class Bootstrap : MonoBehaviour
         yield return new WaitUntil(() => hasConnected);
         Debug.Log("Guest login complete");
         
+        RegisterPlayer();
+    }
+    
+    public void RegisterPlayer()
+    {
         StartCoroutine(GetWallet());
         
         RegisterProgression("plevel");
@@ -56,14 +77,21 @@ public class Bootstrap : MonoBehaviour
         RegisterProgression("pspeed");
         RegisterProgression("pstamina");
         RegisterProgression("phealth");
-        
-      
-
+        GetPlayerProgression("phealth");
+        FinishedLogin();
     }
-
-    #region  GetPlayerInfo
     
-    IEnumerator GetWallet()
+    public void FinishedLogin()
+    {
+        GameManager.instance.switchToGameView();
+        RetrieveProgression("plevel");
+    }
+    
+    #endregion
+    
+    #region playerWallet
+    
+    private IEnumerator GetWallet()
     {
         bool responseReceived = false;
         LootLocker.LootLockerEnums.LootLockerWalletHolderTypes player = LootLocker.LootLockerEnums.LootLockerWalletHolderTypes.player;
@@ -86,14 +114,18 @@ public class Bootstrap : MonoBehaviour
         
         Debug.Log("Found wallet " + _walletID);
         
-        AddGold("100");
+        AddGold("0");
         
         StartCoroutine(GetMoneyAmount());
 
     }
     
+    public string GetWalletID()
+    {
+        return _walletID;
+    }
     
-    private void AddGold(string amount)
+    public void AddGold(string amount)
     {
         int bal;
         try
@@ -107,21 +139,19 @@ public class Bootstrap : MonoBehaviour
         }
 
         int Amount = int.Parse(amount);
-        moneyText.text = "Money: " + (bal + Amount);
+        moneyText.text = "$" + (bal + Amount);
         LootLockerSDKManager.CreditBalanceToWallet(_walletID, "01HTWQ30JTBCKE8X24NC34X1B4", amount, (response) =>
         {
             if (response.success)
             {
                 Debug.Log("Gold added");
+                StartCoroutine(GetMoneyAmount());
             }
             else
             {
                 Debug.Log("Error adding gold: " + response.errorData.message);
             }
         });
-        StartCoroutine(GetMoneyAmount());
-        
-        
     }
     
     IEnumerator GetMoneyAmount()
@@ -137,14 +167,16 @@ public class Bootstrap : MonoBehaviour
             else
             {
                 Debug.Log("Error getting money amount: " + response.errorData.message);
-                AddGold("100");
                 responseReceived = true;
             }
         });
         yield return new WaitUntil(() => responseReceived);
-        moneyText.text = "Money: " + balance;
+        moneyText.text = "$" + balance;
     }
     
+    #endregion
+    
+    #region playerProgression
     
     public void RegisterProgression(string key)
     {
@@ -161,6 +193,46 @@ public class Bootstrap : MonoBehaviour
             }
         });
     }
+    
+    public void GetPlayerProgression(string key)
+    {
+        LootLockerSDKManager.GetPlayerProgression(key, (response) =>
+        {
+            if (response.success)
+            {
+                Debug.Log("Progression retrieved");
+                Debug.Log("Progression: " + response.points);
+                
+            }
+            else
+            {
+                Debug.Log("Error getting progression: " + response.errorData.message);
+            }
+        });
+    }
+    
+    public void RetrieveProgression(string key)
+    {
+        LootLockerSDKManager.GetPlayerProgressions(response =>
+        {
+            if (!response.success) {
+                Debug.Log("Failed: " + response.errorData.message);
+            }
 
+            // Output the player level and show how much points are needed to progress to the next tier for all player progressions
+            foreach (var playerProgression in response.items)
+            {
+                Debug.Log($"Current level in {playerProgression.progression_name} is {playerProgression.step}");
+                if (playerProgression.next_threshold != null)
+                {
+                    Debug.Log($"Points needed to reach next level in {playerProgression.progression_name}: {playerProgression.next_threshold - playerProgression.points}");
+                }
+            }
+            
+            //strength bar
+            GameManager.instance.strengthBar.maxValue = (float)response.items[1].next_threshold;
+            GameManager.instance.strengthBar.currentPercent = (float)response.items[1].points;
+        });
+    }
     #endregion
 }
