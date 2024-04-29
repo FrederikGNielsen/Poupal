@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Michsky.MUIP;
+using TMPro;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -12,7 +13,7 @@ public class GameManager : MonoBehaviour
     public GameObject statsMenu;
     private RectTransform statsMenuRect;
     private bool statsMenuExpanded = false;
-    float targetOffset = 1250;
+    public float targetOffset = 1250;
 
     [Header("UI")]
     public GameObject loadingView;
@@ -23,9 +24,11 @@ public class GameManager : MonoBehaviour
     public ProgressBar stamianBar;
     public ProgressBar healthBar;
 
+    public TextMeshProUGUI levelText;
+
     private void Awake()
     {
-        
+        targetOffset = 1150;
         
         //Singleton pattern
         if (instance == null)
@@ -58,13 +61,13 @@ public class GameManager : MonoBehaviour
         {
             statsMenuExpanded = false;
             // Change the bottom size of the RectTransform
-            targetOffset = 500;
+            targetOffset = 600;
         }
         else
         {
             statsMenuExpanded = true;
             // Change the bottom size of the RectTransform
-            targetOffset = 1250;
+            targetOffset = 1150;
 
         }
     }

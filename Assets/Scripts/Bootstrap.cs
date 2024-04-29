@@ -21,6 +21,7 @@ public class Bootstrap : MonoBehaviour
     public TextMeshProUGUI moneyText;
 
 
+
     private void Awake()
     {
         //singleton pattern
@@ -79,6 +80,7 @@ public class Bootstrap : MonoBehaviour
         RegisterProgression("phealth");
         GetPlayerProgression("phealth");
         FinishedLogin();
+        RetrievePlayerLevel();
     }
     
     public void FinishedLogin()
@@ -218,20 +220,36 @@ public class Bootstrap : MonoBehaviour
             if (!response.success) {
                 Debug.Log("Failed: " + response.errorData.message);
             }
-
-            // Output the player level and show how much points are needed to progress to the next tier for all player progressions
-            foreach (var playerProgression in response.items)
-            {
-                Debug.Log($"Current level in {playerProgression.progression_name} is {playerProgression.step}");
-                if (playerProgression.next_threshold != null)
-                {
-                    Debug.Log($"Points needed to reach next level in {playerProgression.progression_name}: {playerProgression.next_threshold - playerProgression.points}");
-                }
-            }
+            
             
             //strength bar
             GameManager.instance.strengthBar.maxValue = (float)response.items[1].next_threshold;
             GameManager.instance.strengthBar.currentPercent = (float)response.items[1].points;
+            
+            //Speed bar
+            GameManager.instance.speedBar.maxValue = (float)response.items[2].next_threshold;
+            GameManager.instance.speedBar.currentPercent = (float)response.items[2].points;
+            
+            //Stamina bar
+            GameManager.instance.stamianBar.maxValue = (float)response.items[3].next_threshold;
+            GameManager.instance.stamianBar.currentPercent = (float)response.items[3].points;
+            
+            //Health bar
+            GameManager.instance.healthBar.maxValue = (float)response.items[4].next_threshold;
+            GameManager.instance.healthBar.currentPercent = (float)response.items[4].points;
+
+        });
+    }
+
+    public void RetrievePlayerLevel()
+    {
+        LootLockerSDKManager.GetPlayerProgressions(response =>
+        {
+            if (!response.success) {
+                Debug.Log("Failed: " + response.errorData.message);
+            }
+            
+            GameManager.instance.levelText.text = "lvl: " + (float)response.items[0].step;
         });
     }
     #endregion
