@@ -31,11 +31,21 @@ public class DragNavigation : MonoBehaviour
                 
             }
             
-            else if (touch.phase == TouchPhase.Ended)
+            else if (touch.phase == TouchPhase.Moved)
             {
                 dragEndPosition = touch.position;
                 deltaPosition = dragEndPosition - dragStartPosition;
+                if(deltaPosition.x > 250)
+                    Debug.Log("Right");
+                else if(deltaPosition.x < -250)
+                    Debug.Log("Left");
+                if(deltaPosition.y > 250)
+                    Debug.Log("Up");
+                else if(deltaPosition.y < -250)
+                    Debug.Log("Down");
             }
+            
+            
         }
     }
 }
