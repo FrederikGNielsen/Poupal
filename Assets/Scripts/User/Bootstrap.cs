@@ -67,6 +67,8 @@ public class Bootstrap : MonoBehaviour
         Debug.Log("Guest login complete");
         
         RegisterPlayer();
+        
+        
     }
     
     public void RegisterPlayer()
