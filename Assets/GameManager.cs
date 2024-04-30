@@ -23,6 +23,8 @@ public class GameManager : MonoBehaviour
     public ProgressBar speedBar;
     public ProgressBar stamianBar;
     public ProgressBar healthBar;
+    public GameObject statsButton;
+
 
     public TextMeshProUGUI levelText;
 
@@ -61,7 +63,7 @@ public class GameManager : MonoBehaviour
         {
             statsMenuExpanded = false;
             // Change the bottom size of the RectTransform
-            targetOffset = 600;
+            targetOffset = 700;
         }
         else
         {
@@ -70,6 +72,8 @@ public class GameManager : MonoBehaviour
             targetOffset = 1150;
 
         }
+        
+        statsButton.GetComponent<Animator>().SetBool("isExpanded", statsMenuExpanded);
     }
     
     

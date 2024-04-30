@@ -16,17 +16,15 @@ public class PlayerName : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.A))
-            SaveUserName("Pou");
-
         if (Input.GetKeyDown(KeyCode.B))
             StartCoroutine(GetUsername());
     }
     
     
     
-    public void SaveUserName(string name)
+    public void SaveUserName()
     {
+        string name = GameObject.Find("NameField").GetComponent<TMPro.TMP_InputField>().text;
         string path = Application.persistentDataPath + "/playerName.txt";
         StreamWriter writer = new StreamWriter(path, false);
         writer.WriteLine(name);
@@ -79,6 +77,14 @@ public class PlayerName : MonoBehaviour
                 string savePath = Path.Combine(Application.persistentDataPath, "playerName.txt");
                 System.IO.File.WriteAllText(savePath, www.downloadHandler.text);
                 Debug.Log("File downloaded successfully");
+
+                string path = Application.persistentDataPath + "/playerName.txt";
+                using (StreamReader reader = new StreamReader(path))
+                {
+                    string name = reader.ReadLine();
+
+                    GameObject.Find("NameField").GetComponent<TMPro.TMP_InputField>().text = name;
+                }
             }
         }
     }

@@ -24,6 +24,7 @@ public class Bootstrap : MonoBehaviour
 
     private void Awake()
     {
+        Application.targetFrameRate = Screen.currentResolution.refreshRate;
         //singleton pattern
         if (instance == null)
         {
@@ -41,56 +42,55 @@ public class Bootstrap : MonoBehaviour
     }
     
     
-    #region login
-    
-    IEnumerator GuestLogin()
+    #region Login
+
+    private IEnumerator GuestLogin()
     {
         GameManager.instance.switchToLoadingView();
         yield return new WaitForSeconds(1);
+
         bool hasConnected = false;
-        LootLockerSDKManager.StartGuestSession((response) =>
+        LootLockerSDKManager.StartGuestSession(response =>
         {
+            hasConnected = true;
             if (response.success)
             {
                 Debug.Log("Guest session started");
                 _holderUlid = response.player_ulid;
-                hasConnected = true;
+                RegisterPlayer();
             }
             else
             {
                 Debug.Log("Error" + response.errorData.message);
-                hasConnected = true;
             }
         });
 
         yield return new WaitUntil(() => hasConnected);
         Debug.Log("Guest login complete");
-        
-        RegisterPlayer();
-        
-        
     }
-    
-    public void RegisterPlayer()
+
+    private void RegisterPlayer()
     {
         StartCoroutine(GetWallet());
-        
-        RegisterProgression("plevel");
-        RegisterProgression("pstrength");
-        RegisterProgression("pspeed");
-        RegisterProgression("pstamina");
-        RegisterProgression("phealth");
-        GetPlayerProgression("phealth");
-        FinishedLogin();
+
+        string[] progressionKeys = { "plevel", "pstrength", "pspeed", "pstamina", "phealth" };
+        foreach (var key in progressionKeys)
+        {
+            RegisterProgression(key);
+        }
+
+        StartCoroutine(FinishedLogin());
+    }
+
+    private IEnumerator FinishedLogin()
+    {
+        yield return new WaitForSeconds(1);
+        GameManager.instance.switchToGameView();
+        StartCoroutine(GetComponent<PlayerName>().GetUsername());
+        updateProgress();
         RetrievePlayerLevel();
     }
-    
-    public void FinishedLogin()
-    {
-        GameManager.instance.switchToGameView();
-        RetrieveProgression("plevel");
-    }
-    
+
     #endregion
     
     #region playerWallet
@@ -215,30 +215,32 @@ public class Bootstrap : MonoBehaviour
         });
     }
     
-    public void RetrieveProgression(string key)
+    public void RetrieveProgression(
+        )
     {
         LootLockerSDKManager.GetPlayerProgressions(response =>
         {
             if (!response.success) {
                 Debug.Log("Failed: " + response.errorData.message);
             }
+
             
-            
-            //strength bar
-            GameManager.instance.strengthBar.maxValue = (float)response.items[1].next_threshold;
-            GameManager.instance.strengthBar.currentPercent = (float)response.items[1].points;
             
             //Speed bar
-            GameManager.instance.speedBar.maxValue = (float)response.items[2].next_threshold;
-            GameManager.instance.speedBar.currentPercent = (float)response.items[2].points;
+            GameManager.instance.speedBar.maxValue = (float)response.items[3].next_threshold;
+            GameManager.instance.speedBar.currentPercent = (float)response.items[3].points;
             
             //Stamina bar
-            GameManager.instance.stamianBar.maxValue = (float)response.items[3].next_threshold;
-            GameManager.instance.stamianBar.currentPercent = (float)response.items[3].points;
+            GameManager.instance.stamianBar.maxValue = (float)response.items[1].next_threshold;
+            GameManager.instance.stamianBar.currentPercent = (float)response.items[1].points;
             
             //Health bar
-            GameManager.instance.healthBar.maxValue = (float)response.items[4].next_threshold;
-            GameManager.instance.healthBar.currentPercent = (float)response.items[4].points;
+            GameManager.instance.healthBar.maxValue = (float)response.items[2].next_threshold;
+            GameManager.instance.healthBar.currentPercent = (float)response.items[2].points;
+            
+            //strength bar
+            GameManager.instance.strengthBar.maxValue = (float)response.items[4].next_threshold;
+            GameManager.instance.strengthBar.currentPercent = (float)response.items[4].points;
 
         });
     }
@@ -250,9 +252,15 @@ public class Bootstrap : MonoBehaviour
             if (!response.success) {
                 Debug.Log("Failed: " + response.errorData.message);
             }
-            
-            GameManager.instance.levelText.text = "lvl: " + (float)response.items[0].step;
+
+            float level = (float)response.items[0].step;
+            GameManager.instance.levelText.text = "lvl: " + level;
         });
+    }
+
+    void updateProgress()
+    {
+        RetrieveProgression();
     }
     #endregion
 }
